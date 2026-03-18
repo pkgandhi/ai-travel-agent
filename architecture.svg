@@ -1,0 +1,193 @@
+<svg width="100%" viewBox="0 0 680 600" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      .arr { stroke: #aaa; stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+      .sec { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; fill: #999; }
+      .lm  { font-size: 12px; font-weight: 600; }
+      .ls  { font-size: 10px; font-weight: 400; }
+      .pt  { font-size: 10px; font-weight: 500; fill: #555; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="680" height="600" rx="14" fill="#f8f9fc"/>
+
+  <!-- ═══════════════════════════════════
+       SECTION LABEL — MAIN WORKFLOW
+  ═══════════════════════════════════ -->
+  <text class="sec" x="28" y="28">MAIN WORKFLOW</text>
+
+  <!-- ── ROW 1: Form → Config → Intent Parser → Parse JSON ── -->
+
+  <!-- 1. Form Trigger -->
+  <rect x="22" y="38" width="108" height="52" rx="8" fill="#e0f7f1" stroke="#0f9e75" stroke-width="0.8"/>
+  <text class="lm" x="76" y="59" text-anchor="middle" fill="#065f46">Form trigger</text>
+  <text class="ls" x="76" y="76" text-anchor="middle" fill="#0f7a5a">User submits trip</text>
+
+  <!-- 2. Config -->
+  <rect x="148" y="38" width="86" height="52" rx="8" fill="#f3f2ee" stroke="#888780" stroke-width="0.8"/>
+  <text class="lm" x="191" y="59" text-anchor="middle" fill="#2c2c2a">Config</text>
+  <text class="ls" x="191" y="76" text-anchor="middle" fill="#5f5e5a">API keys</text>
+
+  <!-- 3. Intent Parser -->
+  <rect x="252" y="38" width="122" height="52" rx="8" fill="#eeecfe" stroke="#6d5fd4" stroke-width="0.8"/>
+  <text class="lm" x="313" y="59" text-anchor="middle" fill="#3b2fa0">Intent parser</text>
+  <text class="ls" x="313" y="76" text-anchor="middle" fill="#5346b8">Gemini 2.5 Flash</text>
+
+  <!-- 4. Parse JSON -->
+  <rect x="392" y="38" width="108" height="52" rx="8" fill="#f3f2ee" stroke="#888780" stroke-width="0.8"/>
+  <text class="lm" x="446" y="59" text-anchor="middle" fill="#2c2c2a">Parse JSON</text>
+  <text class="ls" x="446" y="76" text-anchor="middle" fill="#5f5e5a">Extract fields</text>
+
+  <!-- Row 1 arrows -->
+  <line x1="130" y1="64" x2="146" y2="64" class="arr"/>
+  <line x1="234" y1="64" x2="250" y2="64" class="arr"/>
+  <line x1="374" y1="64" x2="390" y2="64" class="arr"/>
+
+  <!-- Arrow from Parse JSON — L-shaped path going right then down to avoid row 1 boxes -->
+  <path d="M500 64 L560 64 L560 130" class="arr"/>
+
+  <!-- ── ROW 2: Flight + Hotel searches ── -->
+
+  <!-- 5. Flight Search -->
+  <rect x="312" y="132" width="118" height="52" rx="8" fill="#e6f0fb" stroke="#2176c7" stroke-width="0.8"/>
+  <text class="lm" x="371" y="153" text-anchor="middle" fill="#0c3f7a">Flight search</text>
+  <text class="ls" x="371" y="170" text-anchor="middle" fill="#1a5fa5">SerpAPI → Google</text>
+
+  <!-- 6. Hotel Search -->
+  <rect x="448" y="132" width="118" height="52" rx="8" fill="#e6f0fb" stroke="#2176c7" stroke-width="0.8"/>
+  <text class="lm" x="507" y="153" text-anchor="middle" fill="#0c3f7a">Hotel search</text>
+  <text class="ls" x="507" y="170" text-anchor="middle" fill="#1a5fa5">SerpAPI → Google</text>
+
+  <!-- Branches from L-path at y=130 -->
+  <path d="M560 130 L430 130 L430 132" class="arr"/>
+  <line x1="560" y1="130" x2="560" y2="132" class="arr"/>
+
+  <!-- ── ROW 3: Merge → Itinerary → Extract → Email ── -->
+
+  <!-- 7. Merge -->
+  <rect x="352" y="210" width="112" height="52" rx="8" fill="#f3f2ee" stroke="#888780" stroke-width="0.8"/>
+  <text class="lm" x="408" y="231" text-anchor="middle" fill="#2c2c2a">Merge results</text>
+  <text class="ls" x="408" y="248" text-anchor="middle" fill="#5f5e5a">Flights + hotels</text>
+
+  <!-- Arrows into Merge -->
+  <line x1="371" y1="184" x2="393" y2="210" class="arr"/>
+  <line x1="507" y1="184" x2="440" y2="210" class="arr"/>
+
+  <!-- Arrow Merge → Itinerary -->
+  <line x1="352" y1="236" x2="334" y2="236" class="arr"/>
+
+  <!-- 8. Itinerary Generator -->
+  <rect x="188" y="210" width="144" height="52" rx="8" fill="#eeecfe" stroke="#6d5fd4" stroke-width="0.8"/>
+  <text class="lm" x="260" y="229" text-anchor="middle" fill="#3b2fa0">Itinerary generator</text>
+  <text class="ls" x="260" y="247" text-anchor="middle" fill="#5346b8">Budget / Comfort / Luxury</text>
+
+  <!-- Arrow Itinerary → Extract HTML -->
+  <line x1="188" y1="236" x2="170" y2="236" class="arr"/>
+
+  <!-- 9. Extract HTML -->
+  <rect x="50" y="210" width="118" height="52" rx="8" fill="#f3f2ee" stroke="#888780" stroke-width="0.8"/>
+  <text class="lm" x="109" y="229" text-anchor="middle" fill="#2c2c2a">Extract HTML</text>
+  <text class="ls" x="109" y="247" text-anchor="middle" fill="#5f5e5a">+ feedback button</text>
+
+  <!-- Arrow Extract → Send Email (down) -->
+  <line x1="109" y1="262" x2="109" y2="280" class="arr"/>
+
+  <!-- 10. Send Email -->
+  <rect x="50" y="282" width="118" height="52" rx="8" fill="#e0f7f1" stroke="#0f9e75" stroke-width="0.8"/>
+  <text class="lm" x="109" y="303" text-anchor="middle" fill="#065f46">Send email</text>
+  <text class="ls" x="109" y="320" text-anchor="middle" fill="#0f7a5a">Gmail OAuth2</text>
+
+  <!-- ═══════════════════════════════════
+       DIVIDER
+  ═══════════════════════════════════ -->
+  <line x1="22" y1="356" x2="658" y2="356" stroke="#d4d4e0" stroke-width="0.8" stroke-dasharray="5 4"/>
+
+  <!-- ═══════════════════════════════════
+       SECTION LABEL — FEEDBACK LOOP
+  ═══════════════════════════════════ -->
+  <text class="sec" x="28" y="376">FEEDBACK LOOP</text>
+
+  <!-- ── Feedback branch ── -->
+
+  <!-- 1. Feedback Form -->
+  <rect x="22" y="386" width="118" height="52" rx="8" fill="#fdeee9" stroke="#c4532a" stroke-width="0.8"/>
+  <text class="lm" x="81" y="405" text-anchor="middle" fill="#7a2710">Feedback form</text>
+  <text class="ls" x="81" y="423" text-anchor="middle" fill="#a03520">User submits changes</text>
+
+  <!-- 2. Feedback Config -->
+  <rect x="158" y="386" width="86" height="52" rx="8" fill="#f3f2ee" stroke="#888780" stroke-width="0.8"/>
+  <text class="lm" x="201" y="405" text-anchor="middle" fill="#2c2c2a">Config</text>
+  <text class="ls" x="201" y="423" text-anchor="middle" fill="#5f5e5a">API keys</text>
+
+  <!-- 3. Refinement Agent -->
+  <rect x="262" y="386" width="136" height="52" rx="8" fill="#eeecfe" stroke="#6d5fd4" stroke-width="0.8"/>
+  <text class="lm" x="330" y="405" text-anchor="middle" fill="#3b2fa0">Refinement agent</text>
+  <text class="ls" x="330" y="423" text-anchor="middle" fill="#5346b8">Gemini 2.5 Flash</text>
+
+  <!-- 4. Extract Revised HTML -->
+  <rect x="416" y="386" width="118" height="52" rx="8" fill="#f3f2ee" stroke="#888780" stroke-width="0.8"/>
+  <text class="lm" x="475" y="405" text-anchor="middle" fill="#2c2c2a">Extract HTML</text>
+  <text class="ls" x="475" y="423" text-anchor="middle" fill="#5f5e5a">Clean response</text>
+
+  <!-- 5. Send Revised Email -->
+  <rect x="552" y="386" width="106" height="52" rx="8" fill="#e0f7f1" stroke="#0f9e75" stroke-width="0.8"/>
+  <text class="lm" x="605" y="405" text-anchor="middle" fill="#065f46">Send revised</text>
+  <text class="ls" x="605" y="423" text-anchor="middle" fill="#0f7a5a">Gmail OAuth2</text>
+
+  <!-- Feedback branch arrows -->
+  <line x1="140" y1="412" x2="156" y2="412" class="arr"/>
+  <line x1="244" y1="412" x2="260" y2="412" class="arr"/>
+  <line x1="398" y1="412" x2="414" y2="412" class="arr"/>
+  <line x1="534" y1="412" x2="550" y2="412" class="arr"/>
+
+  <!-- ═══════════════════════════════════
+       LEGEND
+  ═══════════════════════════════════ -->
+  <text class="sec" x="28" y="464">LEGEND</text>
+
+  <rect x="28" y="474" width="12" height="12" rx="3" fill="#e0f7f1" stroke="#0f9e75" stroke-width="0.8"/>
+  <text class="pt" x="46" y="484">Trigger / Email</text>
+
+  <rect x="148" y="474" width="12" height="12" rx="3" fill="#eeecfe" stroke="#6d5fd4" stroke-width="0.8"/>
+  <text class="pt" x="166" y="484">Gemini AI node</text>
+
+  <rect x="268" y="474" width="12" height="12" rx="3" fill="#e6f0fb" stroke="#2176c7" stroke-width="0.8"/>
+  <text class="pt" x="286" y="484">SerpAPI data</text>
+
+  <rect x="378" y="474" width="12" height="12" rx="3" fill="#fdeee9" stroke="#c4532a" stroke-width="0.8"/>
+  <text class="pt" x="396" y="484">Feedback trigger</text>
+
+  <rect x="506" y="474" width="12" height="12" rx="3" fill="#f3f2ee" stroke="#888780" stroke-width="0.8"/>
+  <text class="pt" x="524" y="484">Utility node</text>
+
+  <!-- ═══════════════════════════════════
+       TECH STACK PILLS
+  ═══════════════════════════════════ -->
+  <text class="sec" x="28" y="516">TECH STACK</text>
+
+  <rect x="28"  y="526" width="106" height="20" rx="10" fill="#e8e6fd" stroke="#6d5fd4" stroke-width="0.6"/>
+  <text class="pt" x="81"  y="539" text-anchor="middle">Gemini 2.5 Flash</text>
+
+  <rect x="142" y="526" width="62"  height="20" rx="10" fill="#d6eaf8" stroke="#2176c7" stroke-width="0.6"/>
+  <text class="pt" x="173" y="539" text-anchor="middle">SerpAPI</text>
+
+  <rect x="212" y="526" width="52"  height="20" rx="10" fill="#d1f5e8" stroke="#0f9e75" stroke-width="0.6"/>
+  <text class="pt" x="238" y="539" text-anchor="middle">Gmail</text>
+
+  <rect x="272" y="526" width="36"  height="20" rx="10" fill="#ebebeb" stroke="#888" stroke-width="0.6"/>
+  <text class="pt" x="290" y="539" text-anchor="middle">n8n</text>
+
+  <rect x="316" y="526" width="52"  height="20" rx="10" fill="#ebebeb" stroke="#888" stroke-width="0.6"/>
+  <text class="pt" x="342" y="539" text-anchor="middle">Docker</text>
+
+  <rect x="376" y="526" width="76"  height="20" rx="10" fill="#ebebeb" stroke="#888" stroke-width="0.6"/>
+  <text class="pt" x="414" y="539" text-anchor="middle">Self-hosted</text>
+
+  <rect x="460" y="526" width="58"  height="20" rx="10" fill="#ebebeb" stroke="#888" stroke-width="0.6"/>
+  <text class="pt" x="489" y="539" text-anchor="middle">Free tier</text>
+
+</svg>
