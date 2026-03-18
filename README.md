@@ -2,6 +2,9 @@
 
 A multi-agent AI system that autonomously searches for flights and hotels, generates 3 personalized itinerary options, and delivers them via email — with a built-in feedback loop for refinements.
 
+## Resources
+- [Project One-Pager](AI_Travel_Agent_OnePager.pdf)
+
 ## 🏗️ Architecture
 
 ![AI Travel Agent Architecture](architecture.svg)
