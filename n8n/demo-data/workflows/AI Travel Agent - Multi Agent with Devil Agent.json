@@ -1,0 +1,727 @@
+{
+  "name": "AI Travel Agent - Multi Agent with Devil Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "AI Travel Agent ✈️",
+        "formDescription": "Fill in your travel details and receive 3 personalized itinerary options via email!",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Full Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email Address",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Flying From (City or Airport Code)",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Flying To (City or Airport Code)",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Departure Date",
+              "fieldType": "date",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Return Date",
+              "fieldType": "date",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Budget",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Under $1000"
+                  },
+                  {
+                    "option": "$1000-$2500"
+                  },
+                  {
+                    "option": "$2500-$5000"
+                  },
+                  {
+                    "option": "$5000+"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Travel Preferences (beach, culture, food, adventure)"
+            },
+            {
+              "fieldLabel": "Travel Persona",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Budget Backpacker"
+                  },
+                  {
+                    "option": "Family Traveler"
+                  },
+                  {
+                    "option": "Digital Nomad"
+                  },
+                  {
+                    "option": "Luxury Seeker"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -80,
+        -16
+      ],
+      "id": "d992cd47-450d-4102-8125-829652cd3643",
+      "name": "On form submission",
+      "webhookId": "e1273481-ec39-40f0-b4f0-2f1d691420c0"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $('Config').item.json.GEMINI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Extract travel details from the following form submission and return ONLY valid JSON with no extra text, no markdown, no backticks.\\n\\nCRITICAL: You MUST provide valid IATA airport codes for BOTH origin_code and destination_code. Always look up the main airport code for the city if not explicitly provided. Examples: New York = JFK, Los Angeles = LAX, Miami = MIA, Chicago = ORD, Washington DC = IAD, Paris = CDG, London = LHR, Tokyo = NRT, Dubai = DXB, Sydney = SYD.\\n\\n{\\n  \\\"origin_city\\\": \\\"\\\",\\n  \\\"origin_code\\\": \\\"\\\",\\n  \\\"destination_city\\\": \\\"\\\",\\n  \\\"destination_code\\\": \\\"\\\",\\n  \\\"depart_date\\\": \\\"\\\",\\n  \\\"return_date\\\": \\\"\\\",\\n  \\\"num_days\\\": 0,\\n  \\\"budget_usd\\\": 0,\\n  \\\"traveler_name\\\": \\\"\\\",\\n  \\\"traveler_email\\\": \\\"\\\",\\n  \\\"preferences\\\": []\\n}\\n\\nForm data:\\nName: {{ $('On form submission').item.json['Full Name'] }}\\nEmail: {{ $('On form submission').item.json['Email Address'] }}\\nFlying From: {{ $('On form submission').item.json['Flying From (City or Airport Code)'] }}\\nFlying To: {{ $('On form submission').item.json['Flying To (City or Airport Code)'] }}\\nDeparture Date: {{ $('On form submission').item.json['Departure Date'] }}\\nReturn Date: {{ $('On form submission').item.json['Return Date'] }}\\nBudget: {{ $('On form submission').item.json['Budget'] }}\\nPreferences: {{ $('On form submission').item.json['Travel Preferences (beach, culture, food, adventure)'] }}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        352,
+        -16
+      ],
+      "id": "f2840873-ad11-462f-b24a-ca15c7483cc5",
+      "name": "Gemini Intent Parser",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = items[0].json.candidates[0].content.parts[0].text;\n\nconst cleaned = raw\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nconst jsonMatch = cleaned.match(/\\{[\\s\\S]*\\}/);\nif (!jsonMatch) {\n  throw new Error('No JSON found in response: ' + raw);\n}\n\nconst parsed = JSON.parse(jsonMatch[0]);\nreturn [{ json: parsed }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        -16
+      ],
+      "id": "5900fce9-15fc-4dea-a266-2a108ea3f363",
+      "name": "Parse Gemini Response"
+    },
+    {
+      "parameters": {
+        "url": "=https://serpapi.com/search?engine=google_flights&departure_id={{ $('Parse Gemini Response').item.json.origin_code }}&arrival_id={{ $('Parse Gemini Response').item.json.destination_code }}&outbound_date={{ $('Parse Gemini Response').item.json.depart_date }}&return_date={{ $('Parse Gemini Response').item.json.return_date }}&currency=USD&adults=1&api_key={{ $('Config').item.json.SERPAPI_KEY }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        768,
+        -16
+      ],
+      "id": "7704ff4e-1e41-47ee-8787-02e143fba0c2",
+      "name": "Search Flights"
+    },
+    {
+      "parameters": {
+        "url": "=https://serpapi.com/search?engine=google_hotels&q=hotels+in+{{ $('Parse Gemini Response').item.json.destination_city }}&check_in_date={{ $('Parse Gemini Response').item.json.depart_date }}&check_out_date={{ $('Parse Gemini Response').item.json.return_date }}&currency=USD&adults=1&api_key={{ $('Config').item.json.SERPAPI_KEY }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        976,
+        -16
+      ],
+      "id": "d6323924-54fc-4cb7-a399-a5798595a790",
+      "name": "Search Hotels"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1136,
+        208
+      ],
+      "id": "58f7561d-2506-4f41-8131-74d00675cc8c",
+      "name": "Combine Results"
+    },
+    {
+      "parameters": {
+        "jsCode": "const judgeRaw = $('Judge Agent').item.json.candidates[0].content.parts[0].text;\nconst criticRaw = $('Critic Agent').item.json.candidates[0].content.parts[0].text;\n\n// Unescape HTML entities if Gemini returned escaped HTML\nconst unescape = (str) => str\n  .replace(/&lt;/g, '<')\n  .replace(/&gt;/g, '>')\n  .replace(/&amp;/g, '&')\n  .replace(/&quot;/g, '\"')\n  .replace(/&#39;/g, \"'\");\n\nconst judgeText = unescape(judgeRaw);\nconst criticText = unescape(criticRaw);\n\n// Get traveler details\nconst travelerEmail = $('Parse Gemini Response').item.json.traveler_email;\nconst destination = $('Parse Gemini Response').item.json.destination_city;\n\n// Generate feedback URL\nconst feedbackUrl = `http://localhost:5678/form/2d18f3de-bacb-47ee-9a91-3d7dfd28f0f3?email=${encodeURIComponent(travelerEmail)}&destination=${encodeURIComponent(destination)}`;\n\n// Feedback button HTML\nconst feedbackHtml = `\n<div style=\"text-align:center; margin-top:30px; padding:20px; \n            background-color:#f0f7ff; border-radius:8px; \n            border: 1px solid #d0e8ff;\">\n  <p style=\"font-size:16px; color:#333; margin-bottom:12px;\">\n    Want to refine your itinerary?\n  </p>\n  <a href=\"${feedbackUrl}\" \n     style=\"background-color:#0056b3; color:white; padding:12px 28px; \n            text-decoration:none; border-radius:5px; font-size:14px; \n            font-weight:bold; display:inline-block;\">\n    ✏️ Refine My Itinerary\n  </a>\n</div>`;\n\nreturn [{ \n  json: { \n    html_body: judgeText + criticText + feedbackHtml,\n    traveler_email: travelerEmail,\n    destination: destination\n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        464
+      ],
+      "id": "1deb8dd9-0e87-47c9-91aa-68eb998932bc",
+      "name": "Extract HTML"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Parse Gemini Response').item.json.traveler_email }}",
+        "subject": "=✈️ Your 3 Travel Itineraries to {{ $('Parse Gemini Response').item.json.destination_city }} are Ready!",
+        "message": "={{ $('Extract HTML').item.json.html_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2144,
+        464
+      ],
+      "id": "1cefc710-8bae-4bdb-a59e-be092174509a",
+      "name": "Send Itinerary Email",
+      "webhookId": "97e67d62-3821-4353-be3d-cfcd07985226",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ay8Jymfpqihi8UnB",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+      "jsCode": "return [{\n  json: {\n    GEMINI_API_KEY: \"<YOUR GEMINI API KEY>\",\n    SERPAPI_KEY: \"<YOUR SERPAPI_KEY>\",\n    CLIENT_ID: \"<YOUR CLIENT_ID>\",\n    CLIENT_SECRET: \"<YOUR CLIENT_SECRET>\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -16
+      ],
+      "id": "db5fa9f9-67dc-4aea-9ca4-6b8bb2e2fe7f",
+      "name": "Config"
+    },
+    {
+      "parameters": {
+        "formTitle": "Refine Your Itinerary ✏️",
+        "formDescription": "Tell us what you'd like to change and we'll send you a revised itinerary!",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Which option did you like?",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Option 1 - Budget Traveler"
+                  },
+                  {
+                    "option": "Option 2 - Comfort Seeker"
+                  },
+                  {
+                    "option": "Option 3 - Luxury Experience"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "What would you like to change?",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Any other preferences?"
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        176,
+        768
+      ],
+      "id": "1762ecb9-e96b-4344-80db-6c44325dec30",
+      "name": "Feedback Form Trigger",
+      "webhookId": "c991af58-0bb4-4868-a003-1b71b626693f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $('Feedback Config').item.json.GEMINI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"You are an expert travel agent refining an existing itinerary based on user feedback.\\n\\nORIGINAL TRIP CONTEXT:\\n- Destination: {{ $('Feedback Form Trigger').item.json.destination }}\\n- Traveler Email: {{ $('Feedback Form Trigger').item.json.email }}\\n\\nUSER FEEDBACK:\\n- Option they liked: {{ $('Feedback Form Trigger').item.json['Which option did you like?'] }}\\n- What they want to change: {{ $('Feedback Form Trigger').item.json['What would you like to change?'] }}\\n- Additional preferences: {{ $('Feedback Form Trigger').item.json['Any other preferences?'] }}\\n\\nIMPORTANT: The destination is {{ $('Feedback Form Trigger').item.json.destination }}. Do NOT change the destination. Keep all original dates and location. Only modify what the user explicitly asked to change.\\n\\nPlease generate a REVISED single itinerary for {{ $('Feedback Form Trigger').item.json.destination }} based on the selected option and the requested changes. Keep what the user liked and improve what they asked to change.\\n\\nFormat the entire response as clean HTML for email with headers, sections and bullet points. Do not include a Subject line in the output.\"\n    }]\n  }]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        576,
+        768
+      ],
+      "id": "5db69fde-7c72-436c-bbf8-51656529fe60",
+      "name": "Refinement Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    GEMINI_API_KEY: \"<YOUR GEMINI API KEY>\",\n    SERPAPI_KEY: \"<YOUR SERPAPI_KEY>\",\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        768
+      ],
+      "id": "d55cbc66-c50d-48aa-8abc-6b8634f29a4a",
+      "name": "Feedback Config"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $('Refinement Agent').item.json.candidates[0].content.parts[0].text;\n\nconst unescape = (str) => str\n  .replace(/&lt;/g, '<')\n  .replace(/&gt;/g, '>')\n  .replace(/&amp;/g, '&')\n  .replace(/&quot;/g, '\"')\n  .replace(/&#39;/g, \"'\");\n\nlet cleaned = unescape(raw)\n  .replace(/^```html\\s*/i, '')\n  .replace(/^```\\s*/i, '')\n  .replace(/\\s*```$/i, '')\n  .trim();\n\n// Strip subject line if Gemini included one at the top\ncleaned = cleaned.replace(/^Subject:.*$/im, '').trim();\n\nreturn [{ json: { html_body: cleaned } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        768
+      ],
+      "id": "91ab0c0a-c3bc-4cb5-934d-e39fd251ee56",
+      "name": "Extract Revised HTML"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Feedback Form Trigger').item.json['Email'] }}",
+        "subject": "✈️ Your Revised Itinerary is Ready!",
+        "message": "={{ $('Extract Revised HTML').item.json.html_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        768
+      ],
+      "id": "976e5ac3-f658-49c2-aeb3-dd325a8baafd",
+      "name": "Send Revised Itinerary",
+      "webhookId": "83f74e8c-0a95-4d28-a9e5-dfb4f6131d3f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ay8Jymfpqihi8UnB",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $('Config').item.json.GEMINI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"You are a Budget Travel Agent. Create the cheapest possible itinerary.\\n\\nTRAVELER INFO:\\n- Name: {{ $('Parse Gemini Response').item.json.traveler_name }}\\n- Destination: {{ $('Parse Gemini Response').item.json.destination_city }}\\n- Dates: {{ $('Parse Gemini Response').item.json.depart_date }} to {{ $('Parse Gemini Response').item.json.return_date }}\\n- Budget: ${{ $('Parse Gemini Response').item.json.budget_usd }}\\n- Preferences: {{ $('Parse Gemini Response').item.json.preferences }}\\n- Travel Persona: {{ $('On form submission').item.json['Travel Persona'] }}\\n\\nAdjust your recommendations to match the traveler's persona:\\n- Budget Backpacker: maximize savings aggressively, hostels, street food, free activities\\n- Family Traveler: prioritize kid-friendly, safe, convenient options even if slightly more expensive\\n- Digital Nomad: prioritize fast WiFi, co-working spaces, flexible scheduling, month-friendly stays\\n- Luxury Seeker: prioritize comfort and quality even on a budget — best value premium options\\n\\nCreate a detailed day-by-day itinerary prioritizing lowest cost within the persona's priorities. End your response with: BUDGET AGENT VERDICT\"\n    }]\n  }]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1376,
+        208
+      ],
+      "id": "b79b2d83-1bef-4342-baf3-c2647a26bc78",
+      "name": "Budget Agent"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $('Config').item.json.GEMINI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "=application/json",
+        "body": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"You are an Experience Travel Agent. Create the best possible travel experience regardless of cost.\\n\\nTRAVELER INFO:\\n- Name: {{ $('Parse Gemini Response').item.json.traveler_name }}\\n- Destination: {{ $('Parse Gemini Response').item.json.destination_city }}\\n- Dates: {{ $('Parse Gemini Response').item.json.depart_date }} to {{ $('Parse Gemini Response').item.json.return_date }}\\n- Budget: ${{ $('Parse Gemini Response').item.json.budget_usd }}\\n- Preferences: {{ $('Parse Gemini Response').item.json.preferences }}\\n- Travel Persona: {{ $('On form submission').item.json['Travel Persona'] }}\\n\\nAdjust your recommendations to match the traveler's persona:\\n- Budget Backpacker: focus on authentic local experiences, hidden gems, and cultural immersion over tourist hotspots\\n- Family Traveler: prioritize memorable family-friendly experiences, theme parks, interactive museums, safe neighborhoods\\n- Digital Nomad: prioritize unique experiences that double as content opportunities, scenic co-working spots, local culture\\n- Luxury Seeker: prioritize 5-star hotels, private tours, exclusive restaurants, VIP experiences\\n\\nCreate a detailed day-by-day itinerary prioritizing the best experiences, top-rated hotels, and memorable activities. End your response with: EXPERIENCE AGENT VERDICT\"\n    }]\n  }]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1584,
+        208
+      ],
+      "id": "565f3a1b-f587-4979-8d00-bcf37e1283ac",
+      "name": "Experience Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const budgetProposal = $('Budget Agent').item.json.candidates[0].content.parts[0].text;\nconst experienceProposal = $('Experience Agent').item.json.candidates[0].content.parts[0].text;\n\nreturn [{\n  json: {\n    budget_proposal: budgetProposal,\n    experience_proposal: experienceProposal\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        208
+      ],
+      "id": "d4cda045-1750-4ddf-9921-16382a7ed40a",
+      "name": "Merge Agent Results"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $('Config').item.json.GEMINI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $('Prepare Judge Body').item.json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1360,
+        464
+      ],
+      "id": "7f7d807f-24eb-43d9-8d41-7a472fb605ce",
+      "name": "Judge Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const budgetProposal = $('Merge Agent Results').item.json.budget_proposal;\nconst experienceProposal = $('Merge Agent Results').item.json.experience_proposal;\nconst travelerName = $('Parse Gemini Response').item.json.traveler_name;\nconst destination = $('Parse Gemini Response').item.json.destination_city;\nconst budget = $('Parse Gemini Response').item.json.budget_usd;\nconst preferences = $('Parse Gemini Response').item.json.preferences;\n\nconst prompt = `You are the Judge Agent — a senior travel advisor with 20 years experience. Two agents have submitted competing proposals. Evaluate both and deliver a final recommendation.\n\nTRAVELER: ${travelerName}\nDESTINATION: ${destination}\nBUDGET: $${budget}\nPREFERENCES: ${preferences}\n\n== BUDGET AGENT PROPOSAL ==\n${budgetProposal}\n\n== EXPERIENCE AGENT PROPOSAL ==\n${experienceProposal}\n\nYour task:\n1. Evaluate both proposals fairly\n2. Pick the WINNER based on best fit for traveler\n3. Explain your reasoning\n4. Create a FINAL COMBINED itinerary taking best elements from both\n\nFormat as clean HTML for email with sections:\n- Judge's Verdict (winner and why)\n- What we kept from Budget Agent\n- What we kept from Experience Agent\n- Final Recommended Itinerary (day by day)\n- Estimated Total Cost\n\nMake it personal for ${travelerName}. Output raw HTML only — no markdown, no code fences. Start directly with <!DOCTYPE html>.\n\nSTYLING REQUIREMENTS:\n- Body font-size must be 14px, line-height 1.6\n- h1 font-size: 22px, h2 font-size: 18px, h3 font-size: 15px\n- Max-width 700px centered with margin: auto\n- The <h1> title and first <p> greeting must be separated — add margin-bottom: 12px to h1\n- Keep the email concise — Judge verdict + day-by-day itinerary only, no lengthy preamble`;\n\nconst body = JSON.stringify({\n  contents: [{\n    parts: [{ text: prompt }]\n  }]\n});\n\nreturn [{ json: { body } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        464
+      ],
+      "id": "c2248cc6-99d0-4894-ada4-7ff9009875c7",
+      "name": "Prepare Judge Body"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $('Config').item.json.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $('Prepare Critic Body').item.json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1744,
+        464
+      ],
+      "id": "0b3d160d-e6e5-4b24-a43b-2dbac1a1c795",
+      "name": "Critic Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const judgeOutput = $('Judge Agent').item.json.candidates[0].content.parts[0].text;\nconst travelerName = $('Parse Gemini Response').item.json.traveler_name;\nconst destination = $('Parse Gemini Response').item.json.destination_city;\nconst budget = $('Parse Gemini Response').item.json.budget_usd;\nconst preferences = $('Parse Gemini Response').item.json.preferences;\nconst departDate = $('Parse Gemini Response').item.json.depart_date;\nconst returnDate = $('Parse Gemini Response').item.json.return_date;\n\nconst prompt = `You are a Devil's Advocate Travel Critic with 20 years of experience spotting hidden problems in travel itineraries. A Judge Agent has produced a final itinerary. Your job is NOT to rewrite it — only to audit it ruthlessly for hidden risks.\n\nTRAVELER: ${travelerName}\nDESTINATION: ${destination}\nDATES: ${departDate} to ${returnDate}\nBUDGET: $${budget}\nPREFERENCES: ${preferences}\n\nJUDGE'S ITINERARY:\n${judgeOutput}\n\nAudit this itinerary for the following risk categories:\n\n1. LOGISTICS RISKS — layovers under 90 minutes, tight connections, unrealistic travel times between locations\n2. BUDGET RISKS — hidden costs (resort fees, taxes, tips, transport between hotel and attractions) that could bust the stated budget\n3. EXPERIENCE RISKS — tourist traps, overrated attractions, areas with poor transit or walkability\n4. DIETARY RISKS — flag if vegetarian/dietary options may be limited at recommended restaurants or destinations\n5. TIMING RISKS — attractions that may be closed on the travel dates, peak season crowds, weather issues\n\nFor each risk found, provide:\n- Risk level: HIGH / MEDIUM / LOW\n- Description of the risk\n- Suggested mitigation\n\nThen produce a CRITIC'S VERDICT: a short paragraph summarizing whether the itinerary is APPROVED, APPROVED WITH CAUTIONS, or NEEDS REVISION — and the top 3 action items for the traveler.\n\nFormat your entire response as clean HTML, continuing the style of the Judge's itinerary. Start with a section header \"🔍 Critic's Risk Assessment\" followed by your findings. Output a simple HTML <div> only — no <!DOCTYPE>, no <html>, no <head>, no <body> tags. Max 300 words. Font-size 14px.`;\n\nconst body = JSON.stringify({\n  contents: [{\n    parts: [{ text: prompt }]\n  }]\n});\n\nreturn [{ json: { body } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        464
+      ],
+      "id": "aaa38dc6-9e3e-4bef-8afa-985f078815b3",
+      "name": "Prepare Critic Body"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Intent Parser": {
+      "main": [
+        [
+          {
+            "node": "Parse Gemini Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Gemini Response": {
+      "main": [
+        [
+          {
+            "node": "Search Flights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Flights": {
+      "main": [
+        [
+          {
+            "node": "Search Hotels",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Search Hotels": {
+      "main": [
+        [
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Results": {
+      "main": [
+        [
+          {
+            "node": "Budget Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Itinerary Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Gemini Intent Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feedback Form Trigger": {
+      "main": [
+        [
+          {
+            "node": "Feedback Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feedback Config": {
+      "main": [
+        [
+          {
+            "node": "Refinement Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refinement Agent": {
+      "main": [
+        [
+          {
+            "node": "Extract Revised HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Revised HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Revised Itinerary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Budget Agent": {
+      "main": [
+        [
+          {
+            "node": "Experience Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Experience Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge Agent Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Agent Results": {
+      "main": [
+        [
+          {
+            "node": "Prepare Judge Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Judge Agent": {
+      "main": [
+        [
+          {
+            "node": "Prepare Critic Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Judge Body": {
+      "main": [
+        [
+          {
+            "node": "Judge Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Critic Agent": {
+      "main": [
+        [
+          {
+            "node": "Extract HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Critic Body": {
+      "main": [
+        [
+          {
+            "node": "Critic Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "e9786d05-6bb3-4c55-acff-fca310c75e14",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "gx2xVteU9DFp3DRs",
+  "tags": []
+}
